@@ -18,10 +18,21 @@ button.s{background:transparent;color:var(--ink);border:1px solid var(--line)}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
 .chk{display:flex;gap:8px;align-items:center;font-weight:500;margin-top:.8rem}
 .out{min-height:1.4em;color:var(--mut);margin-top:.7rem;font-size:.95rem}
-.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin:.8rem 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:.8rem 0}
 .grid a{display:block;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--ink);text-decoration:none;font-weight:600}
 .grid a:hover{border-color:var(--acc)}
 details{border-top:1px solid var(--line);padding:.6rem 0}summary{cursor:pointer;font-weight:600}
 footer{border-top:1px solid var(--line);margin-top:3rem;padding:1.4rem 0;color:var(--mut);font-size:.9rem}
 .mut{color:var(--mut);font-size:.92rem}ul{padding-left:1.2rem}li{margin:.3rem 0}
 .chips{display:flex;gap:6px;flex-wrap:wrap}.chips span{background:var(--soft);border-radius:99px;padding:3px 10px;font-size:.85rem}
+.nv{display:flex;gap:18px;align-items:center}.nv a{color:var(--ink);text-decoration:none;font-weight:600;font-size:.95rem}.nv a:hover{color:var(--acc)}
+#cnt{background:var(--acc);color:#fff;border-radius:99px;padding:1px 7px;font-size:.78rem;margin-left:2px}
+.hero{padding:1.2rem 0 .4rem}.hero h1{font-size:clamp(2rem,8vw,3rem);margin-top:1.2rem}
+.pills{display:flex;gap:8px;flex-wrap:wrap;margin-top:.6rem}.pills span{background:var(--soft);border-radius:99px;padding:6px 12px;font-size:.88rem;font-weight:600}
+.ik{font-size:1.1em}
+.item{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0}
+.item.soon{border-color:var(--acc)}.item.late{border-color:#c0392b;background:rgba(192,57,43,.08)}
+.left{font-weight:800;color:var(--acc);white-space:nowrap}.item.late .left{color:#c0392b}
+.x{padding:6px 10px;font-size:.85rem}
+.grid a{padding:14px}
+main{padding-bottom:1rem}
