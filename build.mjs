@@ -1,0 +1,69 @@
+import fs from "fs"; import path from "path";
+import { TOPICS, RYHMAT, TARKISTETTU } from "./topics.mjs";
+const SITE = (process.env.SITE_URL || "https://muistutin.fi").replace(/\/$/, "");
+const NIMI = "Muistutin";
+const D = "dist"; fs.rmSync(D, { recursive: true, force: true }); fs.mkdirSync(D, { recursive: true });
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+const w = (p, c) => { const f = path.join(D, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
+const nav = `<header><div class="w"><a class="logo" href="/">Muistu<b>tin</b></a><a href="/tietoa/">Tietoa</a></div></header>`;
+const foot = `<footer><div class="w"><p>${NIMI} on riippumaton palvelu, joka auttaa muistamaan määräajat. Sivuston tiedot ovat yleistietoa, eivät lakineuvontaa. Tarkista oman tilanteesi päivämäärät ja ehdot aina viralliselta taholta. Tiedot tarkistettu ${TARKISTETTU}.</p><p><a href="/tietosuoja/">Tietosuoja</a> · <a href="/tietoa/">Tietoa palvelusta</a></p></div></footer>`;
+function page({ url, title, desc, body, ld = [], script = "" }) {
+  const full = SITE + url;
+  return `<!doctype html><html lang="fi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${full}">
+<meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${full}"><meta property="og:locale" content="fi_FI">
+<meta name="theme-color" content="#14213d"><link rel="stylesheet" href="/style.css">
+${ld.map(o => `<script type="application/ld+json">${JSON.stringify(o)}</script>`).join("\n")}
+</head><body>${nav}<main class="w">${body}</main>${foot}${script}</body></html>`;
+}
+// Etusivu
+const groups = Object.entries(RYHMAT).map(([k, nm]) => `<h2>${nm}</h2><div class="grid">${TOPICS.filter(t => t.ryhma === k).map(t => `<a href="/asia/${t.slug}/" data-n="${esc(t.nimi + " " + t.kysymys)}">${esc(t.nimi)}</a>`).join("")}</div>`).join("");
+w("index.html", page({
+  url: "/", title: "Muistutin: muistutus autokatsastuksesta, vakuutuksista ja sopimuksista", desc: "Älä unohda määräaikoja. Lisää autokatsastus, vakuutusten uusiutuminen, sopimusten päättyminen ja passin vanheneminen kalenteriisi ilmaiseksi.",
+  ld: [{ "@context": "https://schema.org", "@type": "WebSite", name: NIMI, url: SITE + "/", inLanguage: "fi" }],
+  body: `<h1>Älä unohda määräaikoja.</h1><p class="lead">Valitse asia, syötä päivämäärä ja saat muistutukset suoraan kalenteriisi. Ei rekisteröitymistä, ei tilejä.</p>
+<input id="hae" type="search" placeholder="Hae asiaa, esim. katsastus, passi, sähkö" aria-label="Hae asiaa">${groups}
+<div class="box"><b>Näin se toimii</b><ol><li>Valitse asia, esimerkiksi autokatsastus.</li><li>Syötä päivämäärä, jolloin asia vanhenee tai uusiutuu.</li><li>Lataa muistutus kalenteriisi. Se muistuttaa ennen päivää useita kertoja.</li></ol></div>`,
+  script: `<script src="/haku.js" defer></script>`,
+}));
+// Aihesivut
+for (const t of TOPICS) {
+  const url = `/asia/${t.slug}/`;
+  const rel = TOPICS.filter(x => x.ryhma === t.ryhma && x.slug !== t.slug).slice(0, 4);
+  const ld = [
+    { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: [[t.kysymys, t.vastaus], ...t.faq].map(([q, a]) => ({ "@type": "Question", name: q, acceptedAnswer: { "@type": "Answer", text: a } })) },
+    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: NIMI, item: SITE + "/" }, { "@type": "ListItem", position: 2, name: t.nimi, item: SITE + url }] },
+    { "@context": "https://schema.org", "@type": "Article", headline: t.kysymys, dateModified: TARKISTETTU, inLanguage: "fi", publisher: { "@type": "Organization", name: NIMI } },
+  ];
+  const data = esc(JSON.stringify({ slug: t.slug, nimi: t.nimi, off: t.off }));
+  w(`asia/${t.slug}/index.html`, page({
+    url, title: `${t.nimi}: ${t.kysymys}`, desc: t.vastaus.slice(0, 155).replace(/\s+\S*$/, "") + "…", ld,
+    body: `<p class="mut"><a href="/">Muistutin</a> › ${esc(RYHMAT[t.ryhma])}</p>
+<h1>${esc(t.kysymys)}</h1>
+<div class="ans"><p class="lead" style="margin:0">${esc(t.vastaus)}</p></div>
+<div class="box"><b>Lisää muistutus kalenteriisi</b>
+<form id="mf" data-t="${data}" onsubmit="return false">
+<label for="mtitle">Muistutuksen nimi</label><input id="mtitle" type="text" value="${esc(t.nimi)}">
+<label for="mdate">Päivämäärä, jolloin asia vanhenee tai uusiutuu</label><input id="mdate" type="date" required>
+${t.toista ? `<label class="chk"><input id="mrep" type="checkbox" checked> Toistuu joka vuosi</label>` : `<label class="chk" hidden><input id="mrep" type="checkbox"></label>`}
+<div class="row"><button id="mics" type="button">Lataa kalenteriin (.ics)</button><button id="mgc" type="button" class="s">Google Kalenteri</button></div>
+<p class="out" id="out" aria-live="polite"></p><p class="mut">Muistutukset: ${t.off.map(o => o + " pv").join(", ")} ennen päivää. Tietoja ei lähetetä mihinkään, tiedosto syntyy puhelimessasi.</p></form></div>
+<h2>Mistä löydät päivämäärän?</h2><p>${esc(t.mista)}</p>
+<h2>Vinkit</h2><ul>${t.vinkit.map(v => `<li>${esc(v)}</li>`).join("")}</ul>
+<h2>Usein kysyttyä</h2>${t.faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join("")}
+<h2>Viralliset lähteet</h2><ul>${t.lahteet.map(([n, u]) => `<li><a href="${u}" rel="noopener">${esc(n)}</a></li>`).join("")}</ul>
+<p class="mut">Tiedot tarkistettu ${TARKISTETTU}. Säännöt ja määräajat voivat muuttua, joten tarkista oma päivämääräsi aina viralliselta taholta.</p>
+<h2>Muita muistutuksia</h2><div class="grid">${rel.map(x => `<a href="/asia/${x.slug}/">${esc(x.nimi)}</a>`).join("")}</div>`,
+    script: `<script src="/app.js" defer></script>`,
+  }));
+}
+w("tietoa/index.html", page({ url: "/tietoa/", title: "Tietoa Muistutin-palvelusta", desc: "Muistutin auttaa muistamaan autokatsastuksen, vakuutukset ja sopimusten määräajat.", body: `<h1>Tietoa palvelusta</h1><p>${NIMI} auttaa muistamaan asiat, joilla on päivämäärä: autokatsastus, vakuutukset, sopimukset, passi ja muut. Valitset asian, syötät päivän ja saat muistutuksen kalenteriisi.</p><h2>Rahoitus</h2><p>Palvelu on ilmainen. Joillakin sivuilla voi olla kumppanilinkkejä, esimerkiksi vertailupalveluihin. Merkitsemme ne selvästi, ja niistä voi saada palkkion, ilman että hinta nousee sinulle.</p><h2>Rajaus</h2><p>Sivuston sisältö on yleistietoa. Se ei korvaa viranomaisen tai asiantuntijan neuvoa.</p>` }));
+w("tietosuoja/index.html", page({ url: "/tietosuoja/", title: "Tietosuoja", desc: "Muistutin ei kerää henkilötietoja kalenterimuistutuksista.", body: `<h1>Tietosuoja</h1><p>Kalenterimuistutus syntyy omalla laitteellasi. Syöttämiäsi päivämääriä ei lähetetä palvelimellemme eikä tallenneta mihinkään. Sivusto ei käytä evästeitä eikä seuranta- tai mainostyökaluja.</p><p>Jos palveluun lisätään myöhemmin sähköpostimuistutus, siitä pyydetään erillinen suostumus ja tietosuojaseloste päivitetään ennen käyttöönottoa.</p>` }));
+w("404.html", page({ url: "/404.html", title: "Sivua ei löydy", desc: "Sivua ei löydy.", body: `<h1>Sivua ei löydy</h1><p><a href="/">Palaa etusivulle</a> ja valitse asia listasta.</p>` }));
+fs.copyFileSync("src/style.css", D + "/style.css"); fs.copyFileSync("src/app.js", D + "/app.js"); fs.copyFileSync("src/haku.js", D + "/haku.js");
+const urls = ["/", "/tietoa/", "/tietosuoja/", ...TOPICS.map(t => `/asia/${t.slug}/`)];
+w("sitemap.xml", `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls.map(u => `<url><loc>${SITE}${u}</loc><lastmod>${TARKISTETTU}</lastmod></url>`).join("")}</urlset>`);
+w("robots.txt", `User-agent: *\nAllow: /\n\nUser-agent: GPTBot\nAllow: /\nUser-agent: ClaudeBot\nAllow: /\nUser-agent: PerplexityBot\nAllow: /\nUser-agent: Google-Extended\nAllow: /\n\nSitemap: ${SITE}/sitemap.xml\n`);
+w("llms.txt", `# ${NIMI}\n> Suomenkielinen palvelu, joka auttaa muistamaan määräajat: autokatsastus, vakuutukset, sopimukset, asiakirjat ja verot. Käyttäjä syöttää päivämäärän ja lataa muistutuksen kalenteriinsa ilmaiseksi. Ei rekisteröitymistä.\n\n## Aiheet\n${TOPICS.map(t => `- [${t.nimi}](${SITE}/asia/${t.slug}/): ${t.kysymys}`).join("\n")}\n`);
+if (process.env.SITE_URL) w("CNAME", new URL(SITE).host + "\n");
+console.log("pages:", urls.length);
