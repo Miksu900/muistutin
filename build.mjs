@@ -2,6 +2,7 @@ import fs from "fs"; import path from "path";
 import { TOPICS, RYHMAT, TARKISTETTU } from "./topics.mjs";
 const SITE = (process.env.SITE_URL || "https://muistutin.fi").replace(/\/$/, "");
 const NIMI = "Muistutin";
+const BASE = (process.env.BASE || "").replace(/\/$/, "");
 const D = "dist"; fs.rmSync(D, { recursive: true, force: true }); fs.mkdirSync(D, { recursive: true });
 const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 const w = (p, c) => { const f = path.join(D, p); fs.mkdirSync(path.dirname(f), { recursive: true }); fs.writeFileSync(f, c); };
@@ -9,12 +10,12 @@ const nav = `<header><div class="w"><a class="logo" href="/">Muistu<b>tin</b></a
 const foot = `<footer><div class="w"><p>${NIMI} on riippumaton palvelu, joka auttaa muistamaan määräajat. Sivuston tiedot ovat yleistietoa, eivät lakineuvontaa. Tarkista oman tilanteesi päivämäärät ja ehdot aina viralliselta taholta. Tiedot tarkistettu ${TARKISTETTU}.</p><p><a href="/tietosuoja/">Tietosuoja</a> · <a href="/tietoa/">Tietoa palvelusta</a></p></div></footer>`;
 function page({ url, title, desc, body, ld = [], script = "" }) {
   const full = SITE + url;
-  return `<!doctype html><html lang="fi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  return (`<!doctype html><html lang="fi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(title)}</title><meta name="description" content="${esc(desc)}"><link rel="canonical" href="${full}">
 <meta property="og:title" content="${esc(title)}"><meta property="og:description" content="${esc(desc)}"><meta property="og:type" content="website"><meta property="og:url" content="${full}"><meta property="og:locale" content="fi_FI">
 <meta name="theme-color" content="#14213d"><link rel="stylesheet" href="/style.css">
 ${ld.map(o => `<script type="application/ld+json">${JSON.stringify(o)}</script>`).join("\n")}
-</head><body>${nav}<main class="w">${body}</main>${foot}${script}</body></html>`;
+</head><body>${nav}<main class="w">${body}</main>${foot}${script}</body></html>`).replace(/(href|src)="\//g, `$1="${BASE}/`);
 }
 // Etusivu
 const groups = Object.entries(RYHMAT).map(([k, nm]) => `<h2>${nm}</h2><div class="grid">${TOPICS.filter(t => t.ryhma === k).map(t => `<a href="/asia/${t.slug}/" data-n="${esc(t.nimi + " " + t.kysymys)}">${esc(t.nimi)}</a>`).join("")}</div>`).join("");

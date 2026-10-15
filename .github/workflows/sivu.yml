@@ -14,6 +14,7 @@ jobs:
       - run: node build.mjs
         env:
           SITE_URL: ${{ vars.SITE_URL }}
+          BASE: ${{ vars.SITE_URL == '' && '/muistutin' || '' }}
       - uses: actions/upload-pages-artifact@v3
         with: { path: dist }
   deploy:
